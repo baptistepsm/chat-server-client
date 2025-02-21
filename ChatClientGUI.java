@@ -18,8 +18,8 @@ public class ChatClientGUI extends JFrame {
     private BufferedReader reader;
 
     public ChatClientGUI(String serverIp, int serverPort) {
-        setTitle("Chat Client");
         setSize(600, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         serverMessages = new JTextArea();
@@ -27,9 +27,9 @@ public class ChatClientGUI extends JFrame {
         clientMessages = new JTextArea();
         clientMessages.setEditable(false);
         messageInput = new JTextField();
-        sendButton = new JButton("Send");
-        quitButton = new JButton("Quit");
-        newClientButton = new JButton("New Client");
+        sendButton = new JButton("Envoyer");
+        quitButton = new JButton("Quitter");
+        newClientButton = new JButton("Nouveau client");
 
         JPanel messagePanel = new JPanel(new BorderLayout());
         messagePanel.add(messageInput, BorderLayout.CENTER);
@@ -84,6 +84,9 @@ public class ChatClientGUI extends JFrame {
             Socket clientSocket = new Socket(serverIp, serverPort);
             writer = new PrintWriter(clientSocket.getOutputStream(), true);
             reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+            String clientInfo = "Vous êtes : " + clientSocket.getLocalAddress().getHostAddress() + ":" + clientSocket.getLocalPort();
+            clientMessages.append(clientInfo + "\n");
 
             new Thread(new Runnable() {
                 @Override
