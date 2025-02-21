@@ -1,26 +1,34 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.List;
 
-//Seconde classe pour gérer les clients
 class GestionClient implements Runnable {
     private Socket clientSocket;
-    public GestionClient(Socket socket) {
+    private List<PrintWriter> clientWriters;
+    private PrintWriter writer;
+
+    public GestionClient(Socket socket, List<PrintWriter> clientWriters) {
         this.clientSocket = socket;
+        this.clientWriters = clientWriters;
     }
+
     @Override
     public void run() {
-        try (
-                InputStream inputStream = clientSocket.getInputStream();
-                OutputStream outputStream = clientSocket.getOutputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                PrintWriter writer = new PrintWriter(outputStream, true)
-        ) {
+        try {
+            InputStream inputStream = clientSocket.getInputStream();
+            OutputStream outputStream = clientSocket.getOutputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            writer = new PrintWriter(outputStream, true);
+
+            synchronized (clientWriters) {
+                clientWriters.add(writer);
+            }
             writer.println("Connexion établie avec le serveur.");
-            String message_recu;
-            while ((message_recu = reader.readLine()) != null) {
-                System.out.println("Client " + clientSocket.getInetAddress() + ":" + clientSocket.getPort() + " > " + message_recu);
-                writer.println("Message reçu : " + message_recu);
-                if (message_recu.equalsIgnoreCase("quit")) {
+            String messageRecu;
+            while ((messageRecu = reader.readLine()) != null) {
+                System.out.println("Client " + clientSocket.getInetAddress() + ":" + clientSocket.getPort() + " > " + messageRecu);
+                broadcastMessage("Client " + clientSocket.getInetAddress() + ":" + clientSocket.getPort() + " > " + messageRecu);
+                if (messageRecu.equalsIgnoreCase("quit")) {
                     break;
                 }
             }
@@ -32,7 +40,18 @@ class GestionClient implements Runnable {
             } catch (IOException e) {
                 System.err.println("Erreur lors de la fermeture du socket client : " + e.getMessage());
             }
+            synchronized (clientWriters) {
+                clientWriters.remove(writer);
+            }
             System.out.println("Client " + clientSocket.getInetAddress() + ":" + clientSocket.getPort() + " déconnecté.");
+        }
+    }
+
+    private void broadcastMessage(String message) {
+        synchronized (clientWriters) {
+            for (PrintWriter clientWriter : clientWriters) {
+                clientWriter.println(message);
+            }
         }
     }
 }

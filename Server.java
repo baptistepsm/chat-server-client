@@ -1,10 +1,12 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class Server {
     private static final int Port_Serveur = 6600;
     private static final int Nb_Clients = 10;
+    private static List<PrintWriter> clientWriters = Collections.synchronizedList(new ArrayList<>());
 
     public static void main(String[] args) {
         int portServeur = Port_Serveur;
@@ -22,7 +24,7 @@ public class Server {
             while (true) {
                 Socket clientSocket = serveurSocket.accept();
                 System.out.println("Serveur > Nouvelle connexion du client : " + clientSocket.getInetAddress() + ":" + clientSocket.getPort());
-                clients.execute(new GestionClient(clientSocket));
+                clients.execute(new GestionClient(clientSocket, clientWriters));
             }
         } catch (IOException e) {
             System.err.println("Serveur > Erreur : " + e.getMessage());
